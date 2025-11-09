@@ -112,6 +112,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
+
 .user-info {
   background: #f8f9fa;
   padding: 12px;
@@ -119,7 +120,44 @@ button:disabled {
   font-size: 14px;
   color: #333;
   line-height: 1.5;
+  /* New styles for layout */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+
+/* In popup.css */
+
+.recheck-btn {
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 8px;
+  border-radius: 4px;
+  transition: transform 0.2s, color 0.2s;
+  
+  /* --- THE FIX --- */
+  /* Turn the button into a flex container */
+  display: flex;
+  /* Center the content vertically */
+  align-items: center;
+  /* Center the content horizontally */
+  justify-content: center;
+}
+
+.recheck-btn:hover {
+  color: #4A90E2;
+}
+
+.recheck-btn:active {
+  transform: rotate(180deg);
+}
+
+
+#todaysRecsList, .recommendations {
+  margin-top: 12px;
+}
+
 
 #todaysRecsList, .recommendations {
   margin-top: 12px;
@@ -286,3 +324,4 @@ button:disabled {
   padding: 20px;
   font-size: 14px;
 }
+
