@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CF Recommender Pro</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Recommender Section -->
+    <div class="card">
+      <h2>Codeforces Problem Recommender</h2>
+      <div class="input-group">
+        <input type="text" id="handleInput" placeholder="Enter Codeforces handle" />
+        <button id="getRecsBtn">Get Recs</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="yearFilter">Problems from year:</label>
+        <select id="yearFilter">
+          <option value="2015">2015 or newer</option>
+          <option value="2016">2016 or newer</option>
+          <option value="2017">2017 or newer</option>
+          <option value="2018">2018 or newer</option>
+          <option value="2019">2019 or newer</option>
+          <option value="2020" selected>2020 or newer</option>
+          <option value="2021">2021 or newer</option>
+          <option value="2022">2022 or newer</option>
+          <option value="2023">2023 or newer</option>
+          <option value="2024">2024 or newer</option>
+          <option value="2025">2025 or newer</option>
+          <option value="all">All years</option>
+        </select>
+      </div>
+      
+      <div id="userInfo" class="user-info hidden"></div>
+    </div>
+    
+    <!-- Today's Recommendations Section -->
+    <div id="todaysRecs" class="card hidden">
+      <h3>Today's Recommendations</h3>
+      <div id="todaysRecsList"></div>
+    </div>
+
+    <!-- History Section -->
+    <div id="historyCard" class="card history-card">
+      <div id="historyHeader" class="history-header">
+        <h2>History</h2>
+        <div class="history-controls">
+          <button id="clearHistoryBtn" class="clear-btn">Clear</button>
+          <span id="historyToggleIcon" class="toggle-icon">▶</span>
+        </div>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </div>
+
+    <!-- Status Area -->
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
