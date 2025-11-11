@@ -1,3 +1,5 @@
+
+# PART 1
 ---
 
 ### **Specification Document: Refactoring and Feature Enhancement for Codeforces Problem Recommendation Extension**
@@ -96,5 +98,100 @@ The primary objective is to restructure the application into distinct, single-re
     *   **Starting the Timer:** Add a "Start Timer" button to each recommended problem in the UI. When clicked, the event handler in `App.js` should call `appState.setState({ activeTimer: { ... } })`. It should NOT call a UI method directly.
     *   **Updating the Timer Display:** The `UIManager`'s `render` method, triggered by the state change, will create the timer display and use a `setInterval` to update the elapsed time. The `setInterval` should be cleared and reset every time `render` is called to avoid memory leaks.
     *   **Stopping the Timer:** The `handleManualRecheck` and submission-checking logic in the `CodeforcesRepository` should now also check if the newly solved problem matches the `problemId` in `appState.getState().activeTimer`. If it does, the `App` controller should be notified (e.g., via a return value or event), and it will then call `appState.setState({ activeTimer: null })`. The UI will react automatically and hide the timer.
+
+---
+---
+---
+
+# PART 2
+---
+Excellent feedback. These are crucial usability improvements. The current implementation has a single global timer, but you're describing a system that needs to manage multiple, independent timers—one for each problem. We also need to fix the UI update bug for "Today's" recommendations.
+
+Here is the updated specification document that addresses these three points directly. Give this to the AI.
+
+---
+
+### **Specification Update: Multi-Timer System and UI Bug Fix**
+
+This document details required modifications to the **Problem Timer** feature and a bug fix for the **UI rendering logic**.
+
+#### **1. Multi-Timer System (Feature Modification)**
+
+**Current Behavior:** The application supports only one global timer. Clicking "Start Timer" on any problem overwrites the existing timer. The timer display is in a single, fixed location.
+
+**Required Behavior:**
+1.  Each recommended problem must be able to have its own independent timer.
+2.  Clicking "Start Timer" on a problem that already has a running timer should have no effect.
+3.  The timer display for a specific problem must appear within that problem's list item, not in a global location.
+4.  A user can have multiple timers running simultaneously for different problems.
+
+**Implementation Plan:**
+
+**1.1. Modify `AppState.js` State Structure:**
+*   The state property `activeTimer` must be changed to `activeTimers`.
+*   Instead of being a single object or `null`, `activeTimers` must be an **object that acts as a map**.
+*   The keys of this map will be the `problemId` (e.g., `'158A'`), and the values will be an object containing the `startTime`.
+
+    **Example State:**
+    ```javascript
+    // Before (Old Structure)
+    {
+      activeTimer: { problemId: '158A', startTime: 167... }
+    }
+
+    // After (New Structure)
+    {
+      activeTimers: {
+        '158A': { startTime: 167... }, // Timer running for problem 158A
+        '71A': { startTime: 167... }   // Timer running for problem 71A
+      }
+    }
+    ```
+
+**1.2. Update `App.js` Controller Logic:**
+*   Modify the "Start Timer" event handler.
+*   When the handler is called for a given `problemId`:
+    1.  Get the current `activeTimers` map from `appState.getState()`.
+    2.  Check if `activeTimers[problemId]` already exists. **If it does, do nothing and return.**
+    3.  If it does not exist, create a new `activeTimers` map by copying the old one and adding the new entry: `newTimers[problemId] = { startTime: Date.now() }`.
+    4.  Call `appState.setState({ activeTimers: newTimers })`.
+
+*   Modify the "Stop Timer" logic (after a problem is solved).
+    1.  When a solved problem with `solvedProblemId` is detected, get the current `activeTimers` map.
+    2.  Check if `activeTimers[solvedProblemId]` exists. If it doesn't, do nothing.
+    3.  If it does, create a new `activeTimers` map by copying the old one and **deleting the key** for `solvedProblemId`.
+    4.  Call `appState.setState({ activeTimers: newTimers })`.
+
+**1.3. Update `UIManager.js` Rendering Logic:**
+*   Modify the `render` method and any sub-methods that render problem lists (`renderTodaysRecs`, `renderHistory`).
+*   When rendering each individual problem item, the function must now get the `activeTimers` map from the state: `const timers = appState.getState().activeTimers;`.
+*   For each problem with `problemId`, it must check if `timers[problemId]` exists.
+    *   If it exists, a timer display must be rendered **inside that specific problem's HTML element**. The timer's elapsed time should be calculated based on `timers[problemId].startTime`. The "Start Timer" button for this problem should be disabled or hidden.
+    *   If it does not exist, the timer display for that problem must be hidden or removed.
+
+---
+
+#### **2. UI Bug Fix: Synchronize "Today's Recommendations" and "History" Status**
+
+**Current Behavior:** When a problem from the "Today's Recommendations" list is solved, the checkmark/solved status appears on the item in the main "History" list, but not on the corresponding item in the "Today's Recommendations" list at the top.
+
+**Required Behavior:** The solved status must be reflected consistently across the entire UI. When a problem is marked as solved, it must appear as solved in **both** the "Today's Recommendations" section and the main "History" list simultaneously.
+
+**Implementation Plan:**
+
+**2.1. Unify the Rendering Logic in `UIManager.js`:**
+*   The root cause is likely that the `renderTodaysRecsList` and `renderHistoryList` functions are separate and not re-rendering in sync.
+*   The main `render()` method in `UIManager.js` should be the single source of truth for all UI updates.
+*   When `appState` notifies the `UIManager` of any change (e.g., history data was updated with a new solved status), the `render()` method should be responsible for re-drawing **both** the "Today's" section and the "History" section.
+
+**2.2. Ensure Consistent Data Source:**
+*   Both the "Today's" list and the "History" list should be generated from the **same, up-to-date data source** from the `AppState`.
+*   In the `render()` method:
+    1.  Get the full history object from `appState.getState().history`.
+    2.  Filter this single source of truth to get today's problems.
+    3.  Pass today's problems to a function that renders the "Today's Recommendations" list.
+    4.  Pass the full history object to a function that renders the main history list.
+
+By re-rendering both sections from the same state object every time a change occurs, the UI will always be consistent.
 
 ---

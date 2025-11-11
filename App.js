@@ -84,7 +84,7 @@ class App {
       await this.repository.getUserData(handle, true);
       const updated = await this.repository.updateSolvedStatus(handle);
       if (updated) {
-        await this.checkActiveTimer(handle);
+        await this.checkActiveTimers(handle);
       }
       await this.loadHistory(handle);
       this.uiManager.showStatus('Re-check complete!', '');
@@ -112,13 +112,33 @@ class App {
     }
   }
 
-  async checkActiveTimer(handle) {
+  handleStartTimer(problemId) {
     const state = this.appState.getState();
-    if (state.activeTimer) {
-      const userData = await this.repository.getUserData(handle);
-      if (userData.solvedList.includes(state.activeTimer.problemId)) {
-        this.appState.setState({ activeTimer: null });
+    const activeTimers = { ...state.activeTimers };
+
+    if (activeTimers[problemId]) {
+      return; // Timer already running
+    }
+
+    activeTimers[problemId] = { startTime: Date.now() };
+    this.appState.setState({ activeTimers });
+  }
+
+  async checkActiveTimers(handle) {
+    const state = this.appState.getState();
+    const userData = await this.repository.getUserData(handle);
+    const activeTimers = { ...state.activeTimers };
+    let changed = false;
+
+    for (const problemId in activeTimers) {
+      if (userData.solvedList.includes(problemId)) {
+        delete activeTimers[problemId];
+        changed = true;
       }
+    }
+
+    if (changed) {
+      this.appState.setState({ activeTimers });
     }
   }
 }

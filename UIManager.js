@@ -16,12 +16,13 @@ class UIManager {
     this.historyList = document.getElementById('historyList');
     this.clearHistoryBtn = document.getElementById('clearHistoryBtn');
     this.status = document.getElementById('status');
-    this.timerDisplay = document.getElementById('timerDisplay'); // Assuming you add this to your HTML
-
+    
     this.historyCard.classList.add('collapsed');
+    this.timerIntervals = {};
   }
 
   bindEvents(controller) {
+    this.controller = controller; // Store controller instance
     this.historyHeader.addEventListener('click', () => this.historyCard.classList.toggle('collapsed'));
     this.getRecsBtn.addEventListener('click', controller.handleGetRecs.bind(controller));
     this.clearHistoryBtn.addEventListener('click', controller.handleClearHistory.bind(controller));
@@ -31,12 +32,15 @@ class UIManager {
   }
 
   render() {
+    // Clear all running timer intervals before re-rendering
+    Object.values(this.timerIntervals).forEach(clearInterval);
+    this.timerIntervals = {};
+
     const state = this.appState.getState();
     this.renderUserInfo(state.handle, state.userData);
-    this.renderHistory(state.history);
-    this.renderTodaysRecs(state.history);
+    this.renderTodaysRecs(state.history, state.activeTimers);
+    this.renderHistory(state.history, state.activeTimers);
     this.updateGetRecsButtonState(state.handle, state.history);
-    this.renderTimer(state.activeTimer);
   }
 
   renderUserInfo(handle, userData) {
@@ -49,7 +53,7 @@ class UIManager {
     }
   }
 
-  renderHistory(history) {
+  renderHistory(history, activeTimers) {
     if (!history || Object.keys(history).length === 0) {
       this.historyList.innerHTML = '<div class="empty-history">No recommendations yet</div>';
       return;
@@ -77,13 +81,15 @@ class UIManager {
       dateGroup.appendChild(headerElement);
       
       grouped[date].sort((a, b) => a.rating - b.rating).forEach(problem => {
-        dateGroup.appendChild(this.createProblemElement(problem));
+        // Today's problems in the history view should also have timer capabilities
+        const isToday = date === todayStr;
+        dateGroup.appendChild(this.createProblemElement(problem, isToday, activeTimers));
       });
       this.historyList.appendChild(dateGroup);
     });
   }
 
-  renderTodaysRecs(history) {
+  renderTodaysRecs(history, activeTimers) {
     if (!history) {
       this.todaysRecs.classList.add('hidden');
       return;
@@ -91,10 +97,10 @@ class UIManager {
     const todayStr = new Date().toISOString().split('T')[0];
     const todaysProblems = Object.values(history).filter(p => p.recommendedOn === todayStr).sort((a, b) => a.rating - b.rating);
     
+    this.todaysRecsList.innerHTML = '';
     if (todaysProblems.length > 0) {
-      this.todaysRecsList.innerHTML = '';
       todaysProblems.forEach(problem => {
-        this.todaysRecsList.appendChild(this.createProblemElement(problem, true));
+        this.todaysRecsList.appendChild(this.createProblemElement(problem, true, activeTimers));
       });
       this.todaysRecs.classList.remove('hidden');
     } else {
@@ -102,9 +108,11 @@ class UIManager {
     }
   }
 
-  createProblemElement(problem, withTimerButton = false) {
+  createProblemElement(problem, withTimer, activeTimers) {
+    const problemId = `${problem.contestId}${problem.index}`;
     const item = document.createElement('div');
     item.className = `problem-item ${problem.status === 'solved' ? 'solved' : ''}`;
+    
     const headerElement = document.createElement('div');
     headerElement.className = 'problem-header';
 
@@ -119,21 +127,43 @@ class UIManager {
     ratingElement.className = 'problem-rating';
     ratingElement.textContent = problem.rating;
     headerElement.appendChild(ratingElement);
+    item.appendChild(headerElement);
 
     const idElement = document.createElement('div');
     idElement.className = 'problem-id';
-    idElement.textContent = `${problem.contestId}${problem.index}`;
-    item.appendChild(headerElement);
+    idElement.textContent = problemId;
     item.appendChild(idElement);
 
-    if (withTimerButton && problem.status !== 'solved') {
-      const timerButton = document.createElement('button');
-      timerButton.textContent = 'Start Timer';
-      timerButton.className = 'start-timer-btn';
-      timerButton.addEventListener('click', () => {
-        this.appState.setState({ activeTimer: { problemId: `${problem.contestId}${problem.index}`, startTime: Date.now() } });
-      });
-      item.appendChild(timerButton);
+    const timerContainer = document.createElement('div');
+    timerContainer.className = 'timer-container';
+    item.appendChild(timerContainer);
+
+    const timer = activeTimers[problemId];
+
+    if (withTimer && problem.status !== 'solved') {
+      if (timer) {
+        const timerDisplay = document.createElement('div');
+        timerDisplay.className = 'timer-display';
+        
+        const update = () => {
+          const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+          const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+          const seconds = (elapsed % 60).toString().padStart(2, '0');
+          timerDisplay.textContent = `${minutes}:${seconds}`;
+        };
+        update();
+        this.timerIntervals[problemId] = setInterval(update, 1000);
+        timerContainer.appendChild(timerDisplay);
+
+      } else {
+        const timerButton = document.createElement('button');
+        timerButton.textContent = 'Start Timer';
+        timerButton.className = 'start-timer-btn';
+        timerButton.addEventListener('click', () => {
+          this.controller.handleStartTimer(problemId);
+        });
+        timerContainer.appendChild(timerButton);
+      }
     }
 
     return item;
@@ -158,25 +188,6 @@ class UIManager {
     this.status.className = `status ${type}`;
     if (message) {
       setTimeout(() => this.showStatus(''), 2000);
-    }
-  }
-
-  renderTimer(activeTimer) {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-    }
-    if (activeTimer) {
-      this.timerDisplay.classList.remove('hidden');
-      const update = () => {
-        const elapsed = Math.floor((Date.now() - activeTimer.startTime) / 1000);
-        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-        const seconds = (elapsed % 60).toString().padStart(2, '0');
-        this.timerDisplay.textContent = `Timing ${activeTimer.problemId}: ${minutes}:${seconds}`;
-      };
-      update();
-      this.timerInterval = setInterval(update, 1000);
-    } else {
-      this.timerDisplay.classList.add('hidden');
     }
   }
 

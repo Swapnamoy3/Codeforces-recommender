@@ -4,7 +4,7 @@ class AppState {
       handle: null,
       userData: null,
       history: null,
-      activeTimer: null,
+      activeTimers: {},
       yearFilter: '2020',
     };
     this.subscribers = [];
