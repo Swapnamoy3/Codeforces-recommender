@@ -95,11 +95,26 @@ class UIManager {
       return;
     }
     const todayStr = new Date().toISOString().split('T')[0];
-    const todaysProblems = Object.values(history).filter(p => p.recommendedOn === todayStr).sort((a, b) => a.rating - b.rating);
+    const todaysProblems = Object.values(history)
+      .filter(p => p.recommendedOn === todayStr)
+      .sort((a, b) => {
+        if (a.recommendationOrder !== b.recommendationOrder) {
+          return b.recommendationOrder - a.recommendationOrder;
+        }
+        return a.rating - b.rating;
+      });
     
     this.todaysRecsList.innerHTML = '';
     if (todaysProblems.length > 0) {
+      let lastOrder = -1;
       todaysProblems.forEach(problem => {
+        if (problem.recommendationOrder !== lastOrder) {
+          const header = document.createElement('h4');
+          header.className = 'recommendation-batch-header';
+          header.textContent = `Recommendation Batch #${problem.recommendationOrder}`;
+          this.todaysRecsList.appendChild(header);
+          lastOrder = problem.recommendationOrder;
+        }
         this.todaysRecsList.appendChild(this.createProblemElement(problem, true, activeTimers));
       });
       this.todaysRecs.classList.remove('hidden');

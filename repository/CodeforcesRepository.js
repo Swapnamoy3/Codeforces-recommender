@@ -83,7 +83,7 @@ class CodeforcesRepository {
     return (await browser.storage.local.get(historyKey))[historyKey] || {};
   }
 
-  async saveHistory(handle, recommendations) {
+  async saveHistory(handle, recommendations, recommendationOrder) {
     const historyKey = `history_${handle}`;
     const history = await this.getHistory(handle);
     const today = new Date().toISOString().split('T')[0];
@@ -95,7 +95,8 @@ class CodeforcesRepository {
         name: problem.name,
         rating: problem.rating,
         status: 'recommended',
-        recommendedOn: today
+        recommendedOn: today,
+        recommendationOrder: recommendationOrder
       };
     });
     await browser.storage.local.set({ [historyKey]: history });

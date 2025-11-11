@@ -380,3 +380,109 @@ The application is currently failing to persist the `solveTime` for a solved pro
 
 By following these instructions, Gemini CLI will correctly modify the data layer to save the `solveTime` and then update the controller layer to ensure the UI immediately reflects this newly saved data.
 ---
+---
+---
+
+
+
+# PART 5
+---
+Understood. This is an excellent feature request that adds a "progressive challenge" element to the daily recommendations. It requires significant changes to the logic in the controller (`App.js`), the data model, and the UI rendering.
+
+Here is a detailed specification document for Gemini CLI to implement this new incremental recommendation feature.
+
+---
+
+### **Gemini CLI Task: Implementing Incremental Daily Recommendations**
+
+**High-Level Goal:**
+Modify the recommendation workflow for the "Today's Recommendations" section. Instead of a single batch of three problems per day, the system will provide an initial batch of three. Once those are solved, the user can request additional problems one at a time for the rest of the day. The UI for this section must be updated to display these new problems at the top, creating a clear visual hierarchy. This new logic **only** applies to the "Today's" section; the main history view remains unchanged.
+
+---
+
+#### **Part 1: Enhancing the Data Model**
+
+**Objective:** The current data model only knows *when* a problem was recommended (`recommendedOn`). We need to add information to track the *order or batch* in which problems were recommended on a given day.
+
+**Instructions:**
+
+1.  **Introduce a `recommendationOrder` Property:**
+    *   When a problem is saved to the user's history, it must now include a new property: `recommendationOrder`.
+    *   This will be a simple integer. The first batch of three problems recommended today will all have `recommendationOrder: 1`.
+    *   The next single problem recommended today will have `recommendationOrder: 2`. The one after that will have `recommendationOrder: 3`, and so on.
+    *   This property is the key to both the new logic and the UI sorting.
+
+---
+
+#### **Part 2: Modifying the Controller Logic (`App.js`)**
+
+**Objective:** The controller's `handleGetRecs` and `updateGetRecsButtonState` methods contain the core logic for this feature. They must be significantly updated.
+
+**Instructions:**
+
+1.  **Update `handleGetRecs` Method:**
+    *   This method must now determine how many problems to request.
+    *   **Step 1: Analyze Today's History.** Before fetching new problems, get the user's current history and filter it for problems recommended on today's date.
+    *   **Step 2: Determine Recommendation Count.**
+        *   If the count of today's recommended problems is `0`, it's the first request of the day. The number of problems to fetch is `3`. The `recommendationOrder` for these will be `1`.
+        *   If the count is greater than `0`, it's a subsequent request. The number of problems to fetch is `1`.
+    *   **Step 3: Determine the Next `recommendationOrder`.** Find the highest `recommendationOrder` among today's existing problems and add 1 to it to get the order for the new problem(s).
+    *   **Step 4: Fetch and Save.** Call the `RecommendationService` to get the required number of problems. When saving them to history, you **must** include the new `recommendationOrder` property with the correct value determined in the previous step.
+
+2.  **Update `updateGetRecsButtonState` Method:**
+    *   This method controls when the "Get Recommendations" button is enabled.
+    *   **Step 1: Analyze Today's History.** Get all problems recommended for today.
+    *   **Step 2: Check for Unsolved Problems.**
+        *   If there are no problems recommended for today, the button should be **enabled**.
+        *   If there are problems recommended for today, check if **every single one** of them has a `status` of `'solved'`.
+        *   The button should only be **enabled** if all of today's currently recommended problems are solved. Otherwise, it must be **disabled**.
+
+---
+
+#### **Part 3: Modifying the Recommendation Service**
+
+**Objective:** The `RecommendationService` needs to be flexible enough to return either 3 problems or 1.
+
+**Instructions:**
+
+1.  **Update the `generate` Method Signature:**
+    *   Open `services/RecommendationService.js` (or the relevant strategy file, e.g., `RatingBasedStrategy.js`).
+    *   Modify the `generate` (or `execute`) method to accept a `count` parameter. For example: `generate(params, count = 3)`.
+2.  **Use the `count` Parameter:**
+    *   In the final step of the method, instead of hardcoding `.slice(0, 3)`, use the `count` parameter: `.slice(0, count)`.
+
+---
+
+#### **Part 4: Modifying the UI Rendering (`UIManager.js`)**
+
+**Objective:** The "Today's Recommendations" section must be re-rendered to show the newest problems at the top and visually segment the recommendation batches.
+
+**Instructions:**
+
+1.  **Update the Sorting Logic for "Today's Recommendations":**
+    *   In the `render` or `renderTodaysRecs` method, after filtering for today's problems, you must implement a new sorting logic before rendering.
+    *   **Primary Sort Key:** `recommendationOrder` in **descending** order (so `2` comes before `1`).
+    *   **Secondary Sort Key:** `rating` in **ascending** order (so within the same batch, easier problems are first).
+    *   This will ensure that the single, newer recommendations always appear above the initial batch of three.
+
+2.  **Implement Visual Segmentation (Optional but Recommended):**
+    *   During the loop that renders the sorted list of today's problems, keep track of the `recommendationOrder` of the previously rendered item.
+    *   If the `recommendationOrder` of the current problem is different from the previous one, insert a header element before rendering the problem.
+    *   **Example Logic:**
+        ```javascript
+        let lastOrder = -1;
+        todaysSortedProblems.forEach(problem => {
+            if (problem.recommendationOrder !== lastOrder) {
+                // Create and append a header element
+                const header = document.createElement('h4');
+                header.className = 'recommendation-batch-header';
+                header.textContent = `Recommendation Batch #${problem.recommendationOrder}`;
+                container.appendChild(header);
+                lastOrder = problem.recommendationOrder;
+            }
+            // Render the problem element as usual
+        });
+        ```
+    *   This will create a clear visual separation in the UI, as requested (e.g., "Recommendation Batch #2" followed by one problem, then "Recommendation Batch #1" followed by three problems). This change should **only** be applied to the rendering of the "Today's Recommendations" section.
+
+---

@@ -54,27 +54,34 @@ class App {
     try {
       this.uiManager.showStatus('Loading...', 'loading');
       await browser.storage.local.set({ lastHandle: handle });
-      
+
+      const history = await this.repository.getHistory(handle);
+      const today = new Date().toISOString().split('T')[0];
+      const todaysProblems = Object.values(history).filter(p => p.recommendedOn === today);
+
+      const count = todaysProblems.length === 0 ? 3 : 1;
+      const recommendationOrder = todaysProblems.length === 0 ? 1 : Math.max(...todaysProblems.map(p => p.recommendationOrder)) + 1;
+
       const [userData, problems, contestData] = await Promise.all([
-          this.repository.getUserData(handle),
-          this.repository.getProblemset(),
-          this.repository.getContestData()
+        this.repository.getUserData(handle),
+        this.repository.getProblemset(),
+        this.repository.getContestData()
       ]);
       this.appState.setState({ userData });
-      
+
       const recommendations = this.recommendationService.generateRecommendations({
         problems,
         solvedList: userData.solvedList,
         userRating: userData.rating,
         minYear: this.uiManager.getYearFilter() === 'all' ? 0 : parseInt(this.uiManager.getYearFilter()),
         contestData
-      });
+      }, count);
 
       if (recommendations.length === 0) {
         return this.uiManager.showStatus('No new problems found. Try again later.', 'error');
       }
 
-      await this.repository.saveHistory(handle, recommendations);
+      await this.repository.saveHistory(handle, recommendations, recommendationOrder);
       await this.loadHistory(handle);
       this.uiManager.showStatus('');
 

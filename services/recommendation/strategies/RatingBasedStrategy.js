@@ -1,5 +1,5 @@
 class RatingBasedStrategy {
-  execute({ problems, solvedList, userRating, minYear, contestData }) {
+  execute({ problems, solvedList, userRating, minYear, contestData }, count = 3) {
     const roundedRating = Math.floor(userRating / 100) * 100;
     const targetMin = roundedRating;
     const targetMax = roundedRating + 200;
@@ -18,6 +18,6 @@ class RatingBasedStrategy {
       return true;
     });
     
-    return candidates.sort(() => Math.random() - 0.5).slice(0, 3);
+    return candidates.sort(() => Math.random() - 0.5).slice(0, count);
   }
 }

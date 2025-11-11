@@ -133,3 +133,34 @@ A bug was identified where the calculated `solveTime` for a problem was not bein
     2.  Calls the new `this.repository.markProblemAsSolved(...)` method, passing the `solveTime`.
     3.  Uses a `historyUpdated` flag to determine if the UI needs to be refreshed.
 -   After checking all active timers, if the `historyUpdated` flag is `true`, the controller calls `this.loadHistory(handle)`. This re-fetches the now-updated data from the repository and triggers a full re-render of the UI, ensuring that the "Solved in: HH:MM:SS" message appears immediately without requiring a manual refresh.
+---
+
+## 8. Feature: Incremental Daily Recommendations
+
+To create a more engaging "progressive challenge," the recommendation workflow was overhauled. Instead of a single batch of three problems per day, the system now provides an initial batch of three, and once those are solved, the user can request additional problems one at a time for the rest of the day.
+
+### `CodeforcesRepository.js` (Data Model Enhancement)
+
+-   The `saveHistory` method was updated to accept a `recommendationOrder` parameter.
+-   When a problem is saved to the user's history, it now includes the `recommendationOrder` property (e.g., `1` for the initial batch, `2` for the next, and so on). This is the key data point that drives the new logic.
+
+### `App.js` (Controller Logic Update)
+
+-   The `handleGetRecs` method was significantly updated to manage the new incremental logic:
+    1.  It first analyzes the user's history to find problems recommended on the current day.
+    2.  If no problems have been recommended today, it sets the number of problems to fetch to `3` and the `recommendationOrder` to `1`.
+    3.  If problems already exist for today, it sets the number of problems to fetch to `1` and calculates the next `recommendationOrder` by finding the max existing order and adding 1.
+    4.  It then calls the recommendation service with the correct `count` and saves the new problems with the correct `recommendationOrder`.
+-   The `updateGetRecsButtonState` method was removed from `App.js` to avoid duplication, as this logic is correctly handled by `UIManager.js`.
+
+### `RatingBasedStrategy.js` (Service-Level Change)
+
+-   The `execute` method in the recommendation strategy was modified to accept a `count` parameter, with a default value of `3`.
+-   The final step of the method now uses this `count` parameter (`.slice(0, count)`) to return the requested number of problems, making the service flexible for the controller's needs.
+
+### `UIManager.js` (UI and Rendering Logic)
+
+-   The `renderTodaysRecs` method was updated to improve the presentation of daily recommendations:
+    1.  **Sorting:** Problems in the "Today's Recommendations" section are now sorted primarily by `recommendationOrder` in descending order, and secondarily by `rating` in ascending order. This ensures that newly requested single problems appear at the top.
+    2.  **Visual Segmentation:** The method now inserts a header (e.g., "Recommendation Batch #2") before each group of problems with a new `recommendationOrder`. This creates a clear visual separation between the initial batch and subsequent single recommendations.
+-   The existing `updateGetRecsButtonState` method in `UIManager` correctly handles enabling/disabling the "Get Recommendations" button. It is called automatically on every render, and it enables the button only if all of today's recommendations have been solved.
