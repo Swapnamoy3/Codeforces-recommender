@@ -101,8 +101,7 @@ class CodeforcesRepository {
     await browser.storage.local.set({ [historyKey]: history });
   }
 
-  async updateSolvedStatus(handle) {
-    const userData = await this.getUserData(handle);
+  async updateSolvedStatus(handle, userData) {
     const history = await this.getHistory(handle);
     
     let updated = false;

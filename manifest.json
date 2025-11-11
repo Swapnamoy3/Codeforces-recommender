@@ -3,8 +3,13 @@
   "name": "Codeforces Problem Recommender Pro",
   "version": "2.1.0",
   "description": "Get personalized Codeforces problem recommendations...",
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
   "permissions": [
     "storage",
+    "alarms",
     "https://codeforces.com/api/*"
   ],
   "browser_action": {

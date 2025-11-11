@@ -138,9 +138,21 @@ class UIManager {
     timerContainer.className = 'timer-container';
     item.appendChild(timerContainer);
 
-    const timer = activeTimers[problemId];
-
-    if (withTimer && problem.status !== 'solved') {
+    if (problem.status === 'solved') {
+      const solvedIndicator = document.createElement('div');
+      solvedIndicator.className = 'solved-indicator';
+      solvedIndicator.textContent = '✓ Solved';
+      if (problem.solveTime) {
+        const solveTimeDisplay = document.createElement('span');
+        solveTimeDisplay.className = 'solve-time';
+        const minutes = Math.floor(problem.solveTime / 60).toString().padStart(2, '0');
+        const seconds = (problem.solveTime % 60).toString().padStart(2, '0');
+        solveTimeDisplay.textContent = ` in ${minutes}:${seconds}`;
+        solvedIndicator.appendChild(solveTimeDisplay);
+      }
+      timerContainer.appendChild(solvedIndicator);
+    } else if (withTimer) {
+      const timer = activeTimers[problemId];
       if (timer) {
         const timerDisplay = document.createElement('div');
         timerDisplay.className = 'timer-display';

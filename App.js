@@ -10,6 +10,25 @@ class App {
 
   async init() {
     this.uiManager.bindEvents(this);
+
+    // Listen for updates from the background script
+    browser.runtime.onMessage.addListener((message) => {
+      const { command, payload } = message;
+      if (command === 'timerTick' || command === 'syncState') {
+        this.appState.setState({ 
+          activeTimers: payload.activeTimers,
+          solvedProblems: payload.solvedProblems 
+        });
+      }
+    });
+
+    // Request initial state from the background script
+    const initialState = await browser.runtime.sendMessage({ command: 'requestSync' });
+    this.appState.setState({ 
+      activeTimers: initialState.activeTimers,
+      solvedProblems: initialState.solvedProblems
+    });
+
     const data = await browser.storage.local.get(['lastHandle', 'yearFilter']);
     this.appState.setState({ handle: data.lastHandle, yearFilter: data.yearFilter || '2020' });
     this.uiManager.setInitialValues(data.lastHandle, data.yearFilter);
@@ -81,10 +100,10 @@ class App {
     
     this.uiManager.showStatus('Re-checking recent submissions...', 'loading');
     try {
-      await this.repository.getUserData(handle, true);
-      const updated = await this.repository.updateSolvedStatus(handle);
+      const userData = await this.repository.getUserData(handle, true);
+      const updated = await this.repository.updateSolvedStatus(handle, userData);
       if (updated) {
-        await this.checkActiveTimers(handle);
+        await this.stopTimersForSolvedProblems(handle, userData);
       }
       await this.loadHistory(handle);
       this.uiManager.showStatus('Re-check complete!', '');
@@ -99,11 +118,9 @@ class App {
       return;
     }
     try {
-      await this.repository.updateSolvedStatus(handle);
-      const [history, userData] = await Promise.all([
-        this.repository.getHistory(handle),
-        this.repository.getUserData(handle)
-      ]);
+      const userData = await this.repository.getUserData(handle);
+      await this.repository.updateSolvedStatus(handle, userData);
+      const history = await this.repository.getHistory(handle);
       this.appState.setState({ history, userData });
     } catch (error) {
       console.error('Error loading history:', error);
@@ -113,32 +130,17 @@ class App {
   }
 
   handleStartTimer(problemId) {
-    const state = this.appState.getState();
-    const activeTimers = { ...state.activeTimers };
-
-    if (activeTimers[problemId]) {
-      return; // Timer already running
-    }
-
-    activeTimers[problemId] = { startTime: Date.now() };
-    this.appState.setState({ activeTimers });
+    browser.runtime.sendMessage({ command: 'startTimer', payload: { problemId } });
   }
 
-  async checkActiveTimers(handle) {
+  async stopTimersForSolvedProblems(handle, userData) {
     const state = this.appState.getState();
-    const userData = await this.repository.getUserData(handle);
-    const activeTimers = { ...state.activeTimers };
-    let changed = false;
+    const activeTimers = state.activeTimers;
 
     for (const problemId in activeTimers) {
       if (userData.solvedList.includes(problemId)) {
-        delete activeTimers[problemId];
-        changed = true;
+        browser.runtime.sendMessage({ command: 'stopTimer', payload: { problemId, handle } });
       }
-    }
-
-    if (changed) {
-      this.appState.setState({ activeTimers });
     }
   }
 }

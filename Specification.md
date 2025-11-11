@@ -195,3 +195,121 @@ This document details required modifications to the **Problem Timer** feature an
 By re-rendering both sections from the same state object every time a change occurs, the UI will always be consistent.
 
 ---
+---
+---
+
+
+# PART 3
+---
+Of course. These are excellent points that address the extension's lifecycle and user experience. You've identified two major issues:
+
+1.  **Lack of Persistence:** The timer state is lost when the popup closes because its JavaScript context is destroyed.
+2.  **Poor UX for Solved Problems:** The feedback for a solved problem is unclear, and the valuable timing data is discarded.
+
+We need to make the timer persistent by using a **background script** and improve the UI by storing and displaying the final solve time.
+
+Here is the updated specification document. This is a significant architectural change, so the instructions are detailed.
+
+---
+
+### **Specification Update: Persistent Timers and Enhanced Solved State UI**
+
+This document outlines the implementation of a persistent timer system using a background script and major UX improvements for displaying solved problems.
+
+#### **1. Persistent Timers via Background Script (Architectural Change)**
+
+**Goal:** Timers must continue running even when the extension popup is closed. The state must be persisted and synchronized between the popup and a background process.
+
+**Implementation Plan:**
+
+**1.1. Create a Background Script (`background.js`):**
+*   This script will be the **single source of truth for all timer data**. The popup's `AppState` will now be a temporary, synchronized copy.
+*   In the `manifest.json`, define the background script:
+    ```json
+    "background": {
+      "scripts": ["background.js"],
+      "persistent": false
+    },
+    "permissions": ["storage", "alarms"]
+    ```
+*   The background script will manage the `activeTimers` object. It will store this object in `browser.storage.local` whenever it changes to ensure it survives browser restarts.
+
+**1.2. Manage Timers with Browser Alarms:**
+*   A `setInterval` in a non-persistent background script is unreliable. We must use the `browser.alarms` API to reliably update the UI.
+*   In `background.js`, create a single, repeating alarm that fires every second when at least one timer is running.
+    ```javascript
+    // In background.js
+    function updateAlarms(activeTimers) {
+      const hasTimers = Object.keys(activeTimers).length > 0;
+      if (hasTimers) {
+        browser.alarms.create('timerUpdate', { periodInMinutes: 1 / 60 });
+      } else {
+        browser.alarms.clear('timerUpdate');
+      }
+    }
+    ```
+*   Create a listener for this alarm. When `browser.alarms.onAlarm` fires, the background script will send a message to the popup (if it's open) with the latest timer data.
+
+**1.3. Establish Communication Between Popup and Background:**
+*   The popup and background script will communicate using the `browser.runtime.sendMessage` and `browser.runtime.onMessage` APIs.
+*   **Popup -> Background:** The popup will send messages to start or stop a timer.
+    *   `{ command: 'startTimer', payload: { problemId } }`
+    *   `{ command: 'stopTimer', payload: { problemId, solveTime } }`
+*   **Background -> Popup:** The background will send messages to the popup to provide the initial state and to send periodic updates.
+    *   `{ command: 'syncState', payload: { activeTimers, solvedProblems } }`
+    *   `{ command: 'timerTick', payload: { activeTimers } }` (Sent every second via the alarm)
+
+**1.4. Refactor `App.js` and `AppState.js` (Popup Script):**
+*   The popup's `AppState` no longer owns the timer state. It simply holds a local copy.
+*   On popup initialization (`App.init`), it must send a message to the background script like `{ command: 'requestSync' }`.
+*   The background script will respond with the current `activeTimers` and `solvedProblems` data, which the popup will use to initialize its `AppState`.
+*   The `App.js` controller will now use `browser.runtime.sendMessage` to start/stop timers instead of modifying its local state directly.
+*   The `App.js` will set up a `browser.runtime.onMessage` listener to handle `timerTick` and `syncState` messages from the background, updating its local `AppState` accordingly. This will trigger the reactive UI updates.
+
+---
+
+#### **2. Enhanced Solved Problem UI & Data Storage**
+
+**Goal:** When a problem is solved, clearly indicate its solved status, display the final solve time, and persist this information.
+
+**Implementation Plan:**
+
+**2.1. Modify the Data Structure for Solved Problems:**
+*   The `history` object stored for each user in `browser.storage.local` needs to be updated.
+*   When a problem's status changes from `'recommended'` to `'solved'`, two new properties must be added:
+    *   `solveTime`: The elapsed time in seconds (or a formatted string like "HH:MM:SS").
+    *   `solvedOn`: The timestamp when the problem was solved.
+
+    **Example History Item:**
+    ```javascript
+    // In browser.storage.local -> history_handle -> problemKey
+    {
+      // ... existing properties (contestId, index, name, rating)
+      status: 'solved',
+      recommendedOn: '2023-10-27',
+      solveTime: 3615, // e.g., 1 hour, 0 minutes, 15 seconds
+      solvedOn: 1698436800000
+    }
+    ```
+
+**2.2. Update the "Stop Timer" Logic:**
+*   When a solved problem is detected (in `App.js`, after getting data from the repository), the controller must:
+    1.  Get the `activeTimers` state.
+    2.  If a timer was running for the solved problem, calculate the `solveTime` (`Date.now() - startTime`).
+    3.  Send a `stopTimer` message to the background script.
+    4.  **Crucially, update the problem's entry in the user's history in `browser.storage.local`**, adding the `solveTime` and `solvedOn` properties. This action will be done in the repository, triggered by the controller.
+
+**2.3. Update `UIManager.js` Rendering Logic:**
+*   Modify the function that renders problem items (for both "Today's" and "History" lists).
+*   For each problem, it must now check the `status`.
+    *   **If `status === 'solved'`:**
+        1.  **Do not show the "Start Timer" button.**
+        2.  Render a clear visual indicator, such as a green checkmark icon (`✓`) and a "Solved" label.
+        3.  If the problem has a `solveTime` property, display it prominently (e.g., `Solved in: 01:00:15`).
+    *   **If `status === 'recommended'`:**
+        1.  Check the `activeTimers` map. If a timer is running, display the running time.
+        2.  If no timer is running, display the "Start Timer" button.
+
+This new architecture ensures timers are robust and survive the popup closing. The UI changes provide much clearer feedback to the user, making the extension feel more polished and useful by preserving their performance data.
+
+---
