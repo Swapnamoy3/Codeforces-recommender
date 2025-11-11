@@ -136,11 +136,23 @@ class App {
   async stopTimersForSolvedProblems(handle, userData) {
     const state = this.appState.getState();
     const activeTimers = state.activeTimers;
+    let historyUpdated = false;
 
     for (const problemId in activeTimers) {
       if (userData.solvedList.includes(problemId)) {
+        const startTime = activeTimers[problemId].startTime;
+        const solveTime = Math.floor((Date.now() - startTime) / 1000); // solveTime in seconds
+
+        await this.repository.markProblemAsSolved(handle, problemId, solveTime);
+        historyUpdated = true;
+        
         browser.runtime.sendMessage({ command: 'stopTimer', payload: { problemId, handle } });
       }
+    }
+
+    if (historyUpdated) {
+      // If history was updated, we must reload all data from storage into the app's state to refresh the UI.
+      await this.loadHistory(handle);
     }
   }
 }

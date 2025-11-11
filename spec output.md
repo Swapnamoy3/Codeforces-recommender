@@ -64,3 +64,72 @@ The extension uses a sophisticated caching strategy to minimize API calls and pr
 -   **Manual Re-check:** The user can force a quick re-check by clicking the refresh icon next to their handle. This is useful for immediately updating their solved status after solving a problem. This action triggers the `handleManualRecheck` function in `App.js`, which calls `repository.getUserData(handle, true)`, forcing a quick check.
 
 This multi-layered caching and re-checking mechanism ensures that the data is kept reasonably up-to-date without overwhelming the Codeforces API.
+
+---
+# PART 2 & 3 Updates
+
+## 5. Multi-Timer System & UI Bug Fix
+
+The timer functionality was significantly enhanced to support multiple, independent timers, and a critical UI bug was resolved.
+
+### Multi-Timer System:
+
+-   **`AppState.js` Modification:** The state was changed from a single `activeTimer` object to an `activeTimers` map. This map's keys are `problemId`s, and its values are objects containing the `startTime`, allowing multiple timers to run concurrently.
+
+-   **`App.js` Controller Logic:** The controller was updated to manage the `activeTimers` map. The `handleStartTimer` function now adds a new timer to the map only if one isn't already running for that problem. The `checkActiveTimers` logic was updated to correctly remove timers from the map when a problem is solved.
+
+-   **`UIManager.js` Rendering:** The UI was refactored to render timers **within each problem's list item**. The global timer display was removed. The `createProblemElement` function now checks if a timer is active for the specific problem it's rendering and displays either the running timer or a "Start Timer" button.
+
+### UI Bug Fix:
+
+-   **Synchronized Rendering:** A bug was fixed where the "Today's Recommendations" list did not visually update when a problem was solved. The `UIManager`'s main `render()` method now acts as the single source of truth for all UI updates. It re-renders both the "Today's Recommendations" and the main "History" list from the same, consistent `AppState` object every time a change is detected, ensuring the UI is always in sync.
+
+## 6. Persistent Timers & Enhanced Solved State UI
+
+This major architectural change introduced a background script to ensure timers persist even when the popup is closed and to provide a richer user experience for solved problems.
+
+### Persistent Timers via Background Script:
+
+-   **`background.js`:** A new background script was created to be the **single source of truth for all timer data**. It manages the `activeTimers` object and persists it to `browser.storage.local` to survive browser restarts.
+
+-   **Browser Alarms:** The unreliable `setInterval` was replaced with the `browser.alarms` API. A single, repeating alarm (`timerUpdate`) is created when timers are active, firing every second to ensure reliable updates.
+
+-   **Popup/Background Communication:** A messaging system using `browser.runtime.sendMessage` and `browser.runtime.onMessage` was established. The popup sends commands like `startTimer` and `stopTimer` to the background, and the background sends `timerTick` and `syncState` messages back to keep the popup's UI updated.
+
+-   **Refactored Popup Logic:** The popup's `App.js` and `AppState.js` were refactored. They no longer "own" the timer state but instead hold a local, synchronized copy. On initialization, the popup requests the current state from the background script and then listens for periodic updates.
+
+### Enhanced Solved Problem UI:
+
+-   **Data Structure Update:** The `history` object for each user was modified. When a problem is solved, it now stores the `solveTime` (in seconds) and a `solvedOn` timestamp.
+
+-   **`UIManager.js` Rendering:** The UI was significantly improved.
+    -   For solved problems, the "Start Timer" button is replaced with a green "✓ Solved" indicator.
+    -   If a `solveTime` is available, it is displayed next to the solved indicator (e.g., "✓ Solved in: 01:15").
+    -   This provides clear, persistent feedback on user performance.
+
+These changes create a more robust, reliable, and user-friendly experience, making the extension a more powerful tool for Codeforces practice.
+---
+
+## 7. Bug Fix: Persistent Solve Time Storage
+
+A bug was identified where the calculated `solveTime` for a problem was not being correctly saved, meaning the enhanced UI for solved problems could not display the final time. This was fixed by correcting the data flow between the controller (`App.js`) and the data layer (`CodeforcesRepository.js`).
+
+### `CodeforcesRepository.js` (Data Layer Fix)
+
+-   A new method, `markProblemAsSolved(handle, problemId, solveTime)`, was implemented in the repository.
+-   This method is now the single point of truth for marking a problem as solved. It performs the following actions:
+    1.  Retrieves the current user history from storage.
+    2.  Finds the specific problem that was solved.
+    3.  Updates the problem's `status` to `'solved'`.
+    4.  **Crucially, it adds the `solveTime` (in seconds) and a `solvedOn` timestamp to the problem's data object.**
+    5.  Saves the entire updated history object back to `browser.storage.local`.
+-   A `console.log` was added for easier debugging during development.
+
+### `App.js` (Controller & UI Refresh Fix)
+
+-   The `stopTimersForSolvedProblems` method in the main controller was updated to orchestrate the fix.
+-   When a solved problem is detected (by comparing the `activeTimers` list with the user's latest submissions), the controller now:
+    1.  Calculates the `solveTime` in seconds by comparing the `startTime` with the current time.
+    2.  Calls the new `this.repository.markProblemAsSolved(...)` method, passing the `solveTime`.
+    3.  Uses a `historyUpdated` flag to determine if the UI needs to be refreshed.
+-   After checking all active timers, if the `historyUpdated` flag is `true`, the controller calls `this.loadHistory(handle)`. This re-fetches the now-updated data from the repository and triggers a full re-render of the UI, ensuring that the "Solved in: HH:MM:SS" message appears immediately without requiring a manual refresh.

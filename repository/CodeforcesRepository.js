@@ -124,4 +124,20 @@ class CodeforcesRepository {
     const cacheKey = `userData_${handle}`;
     await browser.storage.local.remove([historyKey, cacheKey]);
   }
+
+  async markProblemAsSolved(handle, problemId, solveTime) {
+    const historyKey = `history_${handle}`;
+    const history = await this.getHistory(handle);
+    const problem = history[problemId];
+
+    if (problem && problem.status !== 'solved') {
+      problem.status = 'solved';
+      problem.solveTime = solveTime;
+      problem.solvedOn = Date.now();
+
+      console.log(`[Repository] Updating storage for ${problemId} with data:`, problem);
+
+      await browser.storage.local.set({ [historyKey]: history });
+    }
+  }
 }

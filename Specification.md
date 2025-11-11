@@ -313,3 +313,70 @@ This document outlines the implementation of a persistent timer system using a b
 This new architecture ensures timers are robust and survive the popup closing. The UI changes provide much clearer feedback to the user, making the extension feel more polished and useful by preserving their performance data.
 
 ---
+---
+---
+
+# PART 4
+---
+
+Of course. This is the perfect use case for a detailed, instructional prompt for Gemini CLI. Instead of giving it the code, we will give it a precise, step-by-step guide on how to analyze the existing code and implement the fix.
+
+Here is the detailed instruction document.
+
+---
+
+### **Gemini CLI Task: Debugging and Implementing `solveTime` Storage**
+
+**High-Level Goal:**
+The application is currently failing to persist the `solveTime` for a solved problem. The task is to locate the bug in the data flow, fix the data storage logic, and ensure the UI refreshes correctly to display the saved time. This involves modifying two key files: `CodeforcesRepository.js` (the data layer) and `App.js` (the controller).
+
+---
+
+#### **Part 1: Correcting the Data Storage Logic in `CodeforcesRepository.js`**
+
+**Objective:** The `markProblemAsSolved` method in the repository is the single point of failure for data storage. You must ensure this method correctly modifies the history object to include the `solveTime` before saving it to `browser.storage`.
+
+**Instructions:**
+
+1.  **Locate or Create the Method:**
+    *   Open the file `repository/CodeforcesRepository.js`.
+    *   Find the asynchronous method named `markProblemAsSolved`. Its signature must accept three arguments: `handle`, `problemId`, and `solveTime`.
+    *   If this method does not exist, you must create it within the `CodeforcesRepository` class.
+
+2.  **Implement the Method's Logic (Step-by-Step):**
+    *   **Fetch Current History:** Inside the method, the first step is to retrieve the most up-to-date history object from storage for the given `handle`. Use the `history_${handle}` key format.
+    *   **Find the Target Problem:** Access the specific problem within the fetched history object using its `problemId` as the key (e.g., `history[problemId]`).
+    *   **Perform a Safety Check:** Before modifying, add a conditional check to ensure the problem object actually exists and that its status is not already `'solved'`. This prevents errors and redundant operations.
+    *   **Modify the Problem Object (The Core Fix):**
+        *   Update the `status` property of the problem object to the string `'solved'`.
+        *   **Crucially, add a new property to the problem object named `solveTime`**. Assign it the value of the `solveTime` parameter that was passed into the method.
+        *   Add another new property named `solvedOn` and assign it the current timestamp using `Date.now()`.
+    *   **Add a Debug Log:** Immediately before saving, insert a `console.log` statement to display the entire modified `problem` object. The log message should be clear, for example: `"[Repository] Updating storage for ${problemId} with data:"`. This is essential for verification.
+    *   **Save the Modified History:** The final step is to save the **entire `history` object** (which now contains the modified problem) back to `browser.storage` using the same `history_${handle}` key.
+
+---
+
+#### **Part 2: Correcting the Controller Logic and UI Refresh in `App.js`**
+
+**Objective:** The `App.js` controller is responsible for calculating the `solveTime`, calling the repository to save it, and—most importantly—triggering a UI refresh to display the new data.
+
+**Instructions:**
+
+1.  **Locate the Detection Logic:**
+    *   Open the file `App.js`.
+    *   Find the method responsible for checking for newly solved problems. This is likely named `checkForSolvedProblems`.
+
+2.  **Implement the Orchestration Logic (Step-by-Step):**
+    *   **Inside the Conditional/Loop:** Locate the block of code that executes when a timed problem is found in the user's `solvedList`.
+    *   **Verify Calculation:** Ensure the `solveTime` is being calculated correctly (e.g., `(Date.now() - startTime) / 1000`).
+    *   **Call the Repository:** Immediately after calculating `solveTime`, you must call the repository method you just fixed. The call should look like this: `await this.repository.markProblemAsSolved(handle, problemId, solveTime)`. It is critical to use `await` here.
+    *   **Use a Flag for Updates:** Introduce a boolean flag, like `historyUpdated`, initialized to `false` before the loop. Set it to `true` inside the conditional block after you've successfully called `markProblemAsSolved`.
+
+3.  **Implement the UI Refresh (The Second Core Fix):**
+    *   **After the Loop:** After the loop that checks for solved problems has finished, add a new conditional statement.
+    *   **Check the Flag:** This statement should check if your `historyUpdated` flag is `true`.
+    *   **Trigger the Refresh:** If the flag is `true`, it means data in storage has changed and the UI is now out of date. You must call the method that reloads all data for the current user and triggers a full re-render. This method is `this.loadPageForHandle(handle)`. This call must also use `await`.
+    *   **Explain with a Comment:** Add a comment above this block explaining why it's necessary: `// If history was updated, we must reload all data from storage into the app's state to refresh the UI.`
+
+By following these instructions, Gemini CLI will correctly modify the data layer to save the `solveTime` and then update the controller layer to ensure the UI immediately reflects this newly saved data.
+---
