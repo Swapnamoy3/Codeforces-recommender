@@ -1,5 +1,5 @@
 class RatingBasedStrategy {
-  execute({ problems, solvedList, userRating, minYear, contestData }, count = 3) {
+  execute({ problems, solvedList, userRating, yearRange, contestData }, count = 3) {
     const roundedRating = Math.floor(userRating / 100) * 100;
     const targetMin = roundedRating;
     const targetMax = roundedRating + 200;
@@ -8,11 +8,11 @@ class RatingBasedStrategy {
       if (!p.rating || p.rating < targetMin || p.rating > targetMax) return false;
       if (solvedList.includes(`${p.contestId}${p.index}`)) return false;
       
-      if (minYear > 0 && p.contestId) {
+      if (p.contestId) {
         const contestYear = contestData[p.contestId];
-        if (!contestYear || contestYear < minYear) {
-          return false;
-        }
+        // Apply year range filter
+        if (yearRange.from && contestYear < yearRange.from) return false;
+        if (yearRange.to && contestYear > yearRange.to) return false;
       }
       
       return true;

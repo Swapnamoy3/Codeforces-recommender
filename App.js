@@ -30,8 +30,12 @@ class App {
     });
 
     const data = await browser.storage.local.get(['lastHandle', 'yearFilter']);
-    this.appState.setState({ handle: data.lastHandle, yearFilter: data.yearFilter || '2020' });
-    this.uiManager.setInitialValues(data.lastHandle, data.yearFilter);
+    const currentYear = new Date().getFullYear();
+    this.appState.setState({ 
+      handle: data.lastHandle, 
+      yearFilter: data.yearFilter || { from: 2020, to: currentYear } 
+    });
+    this.uiManager.setInitialValues(data.lastHandle, this.appState.getState().yearFilter);
     if (data.lastHandle) {
       await this.loadHistory(data.lastHandle);
     }
@@ -69,11 +73,13 @@ class App {
       ]);
       this.appState.setState({ userData });
 
+      const yearRange = this.uiManager.getYearFilter();
+
       const recommendations = this.recommendationService.generateRecommendations({
         problems,
         solvedList: userData.solvedList,
         userRating: userData.rating,
-        minYear: this.uiManager.getYearFilter() === 'all' ? 0 : parseInt(this.uiManager.getYearFilter()),
+        yearRange: yearRange,
         contestData
       }, count);
 

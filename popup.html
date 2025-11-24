@@ -38,13 +38,12 @@
 
         <!-- Filter Row -->
         <div class="flex items-center justify-between" style="margin-top: 12px;">
-          <label for="yearFilter" class="section-label" style="margin-bottom:0;">Problems From</label>
-          <select id="yearFilter" class="form-select">
-            <option value="2020" selected>2020 or newer</option>
-            <option value="2021">2021 or newer</option>
-            <option value="2022">2022 or newer</option>
-            <option value="all">All time</option>
-          </select>
+          <label class="section-label" style="margin-bottom:0;">Problems From</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="yearFrom" placeholder="From" class="form-input" style="width: 80px; text-align: center; padding-left: 12px;">
+            <span class="text-slate-400">-</span>
+            <input type="number" id="yearTo" placeholder="To" class="form-input" style="width: 80px; text-align: center; padding-left: 12px;">
+          </div>
         </div>
 
         <!-- User Info (Hidden by default) -->

@@ -5,7 +5,8 @@ class UIManager {
 
         this.handleInput = document.getElementById('handleInput');
         this.getRecsBtn = document.getElementById('getRecsBtn');
-        this.yearFilter = document.getElementById('yearFilter');
+        this.yearFrom = document.getElementById('yearFrom');
+        this.yearTo = document.getElementById('yearTo');
         this.userInfo = document.getElementById('userInfo');
         this.userInfoText = document.getElementById('userInfoText');
         this.manualRecheckBtn = document.getElementById('manualRecheckBtn');
@@ -41,7 +42,8 @@ class UIManager {
         this.clearHistoryBtn.addEventListener('click', controller.handleClearHistory.bind(controller));
         this.manualRecheckBtn.addEventListener('click', controller.handleManualRecheck.bind(controller));
         this.handleInput.addEventListener('input', (e) => controller.handleInputChange(e.target.value.trim()));
-        this.yearFilter.addEventListener('change', (e) => controller.handleYearFilterChange(e.target.value));
+        this.yearFrom.addEventListener('input', () => controller.handleYearFilterChange(this.getYearFilter()));
+        this.yearTo.addEventListener('input', () => controller.handleYearFilterChange(this.getYearFilter()));
     }
 
     render() {
@@ -324,11 +326,19 @@ class UIManager {
     }
 
     getHandle() { return this.handleInput.value.trim(); }
-    getYearFilter() { return this.yearFilter.value; }
+    getYearFilter() {
+        return {
+            from: this.yearFrom.value ? parseInt(this.yearFrom.value) : null,
+            to: this.yearTo.value ? parseInt(this.yearTo.value) : null
+        };
+    }
     
     setInitialValues(handle, yearFilter) {
         if (handle) this.handleInput.value = handle;
-        if (yearFilter) this.yearFilter.value = yearFilter;
+        if (yearFilter) {
+            this.yearFrom.value = yearFilter.from || '';
+            this.yearTo.value = yearFilter.to || '';
+        }
     }
 
     startRefreshAnimation() {
