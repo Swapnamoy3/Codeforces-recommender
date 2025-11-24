@@ -410,6 +410,6 @@ input, select { font-family: inherit; }
 }
 
 .rotate-animation {
-  animation: rotate 1s linear infinite; /* Adjust duration and timing as needed */
+  animation: rotate 0.3s infinite alternate; /* Adjust duration and timing as needed */
   transform-origin: center;
 }
