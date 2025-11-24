@@ -399,3 +399,13 @@ input, select { font-family: inherit; }
   align-items: center;
   gap: 3px;
 }
+
+/* Animation for refresh button */
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.rotate-animation {
+  animation: rotate 1s linear infinite; /* Adjust duration and timing as needed */
+}

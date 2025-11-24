@@ -330,4 +330,16 @@ class UIManager {
         if (handle) this.handleInput.value = handle;
         if (yearFilter) this.yearFilter.value = yearFilter;
     }
+
+    startRefreshAnimation() {
+        if (this.manualRecheckBtn) {
+            this.manualRecheckBtn.classList.add('rotate-animation');
+        }
+    }
+
+    stopRefreshAnimation() {
+        if (this.manualRecheckBtn) {
+            this.manualRecheckBtn.classList.remove('rotate-animation');
+        }
+    }
 }

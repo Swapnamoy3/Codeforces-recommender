@@ -106,6 +106,7 @@ class App {
     if (!handle) return;
     
     this.uiManager.showStatus('Re-checking recent submissions...', 'loading');
+    this.uiManager.startRefreshAnimation();
     try {
       const userData = await this.repository.getUserData(handle, true);
       const updated = await this.repository.updateSolvedStatus(handle, userData);
@@ -116,6 +117,8 @@ class App {
       this.uiManager.showStatus('Re-check complete!', '');
     } catch (error) {
       this.uiManager.showStatus(error.message, 'error');
+    } finally {
+      this.uiManager.stopRefreshAnimation();
     }
   }
 
