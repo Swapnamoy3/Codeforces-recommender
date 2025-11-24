@@ -167,6 +167,9 @@ input, select { font-family: inherit; }
 .btn-primary:disabled { background: var(--slate-300); cursor: not-allowed; }
 
 .btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--slate-400);
   padding: 4px;
   border-radius: 4px;
@@ -408,4 +411,5 @@ input, select { font-family: inherit; }
 
 .rotate-animation {
   animation: rotate 1s linear infinite; /* Adjust duration and timing as needed */
+  transform-origin: center;
 }
