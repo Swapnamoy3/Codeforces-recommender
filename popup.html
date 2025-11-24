@@ -7,63 +7,96 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Recommender Section -->
-    <div class="card">
-      <h2>Codeforces Problem Recommender</h2>
-      <div class="input-group">
-        <input type="text" id="handleInput" placeholder="Enter Codeforces handle" />
-        <button id="getRecsBtn">Get Recs</button>
+
+  <!-- Header -->
+  <header class="app-header flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="brand-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
       </div>
-      
-      <div class="filter-group">
-        <label for="yearFilter">Problems from year:</label>
-        <select id="yearFilter">
-          <!-- Options remain the same -->
-          <option value="2015">2015 or newer</option>
-          <option value="2016">2016 or newer</option>
-          <option value="2017">2017 or newer</option>
-          <option value="2018">2018 or newer</option>
-          <option value="2019">2019 or newer</option>
-          <option value="2020" selected>2020 or newer</option>
-          <option value="2021">2021 or newer</option>
-          <option value="2022">2022 or newer</option>
-          <option value="2023">2023 or newer</option>
-          <option value="2024">2024 or newer</option>
-          <option value="2025">2025 or newer</option>
-          <option value="all">All years</option>
-        </select>
-      </div>
-      
-      <div id="userInfo" class="user-info">
-        <span id="userInfoText"></span>
-        <span id="manualRecheckBtn" class="recheck-btn" title="Force re-check of recent submissions">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="fill: rgba(0, 0, 0, 1);transform: rotate(90deg);msFilter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1);"><path d="m13 7.101.01.001a4.978 4.978 0 0 1 2.526 1.362 5.005 5.005 0 0 1 1.363 2.528 5.061 5.061 0 0 1-.001 2.016 4.976 4.976 0 0 1-1.363 2.527l1.414 1.414a7.014 7.014 0 0 0 1.908-3.54 6.98 6.98 0 0 0 0-2.819 6.957 6.957 0 0 0-1.907-3.539 6.97 6.97 0 0 0-2.223-1.5 6.921 6.921 0 0 0-1.315-.408c-.137-.028-.275-.043-.412-.063V2L9 6l4 4V7.101zm-7.45 7.623c.174.412.392.812.646 1.19.249.37.537.718.854 1.034a7.036 7.036 0 0 0 2.224 1.501c.425.18.868.317 1.315.408.167.034.338.056.508.078v2.944l4-4-4-4v3.03c-.035-.006-.072-.003-.107-.011a4.978 4.978 0 0 1-2.526-1.362 4.994 4.994 0 0 1 .001-7.071L7.051 7.05a7.01 7.01 0 0 0-1.5 2.224A6.974 6.974 0 0 0 5 12a6.997 6.997 0 0 0 .55 2.724z"></path></svg>        </span>
-      </div>
+      <h1 class="brand-title">CF Recommender <span class="text-brand">Pro</span></h1>
     </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
     
-    <!-- Today's Recommendations Section -->
-    <div id="todaysRecs" class="card hidden">
-      <h3>Today's Recommendations</h3>
-      <div id="todaysRecsList"></div>
+    <!-- Input Card -->
+    <div class="card">
+      <div class="card-body">
+        
+        <!-- Input Row -->
+        <div class="flex gap-2">
+          <div class="input-wrapper">
+            <div class="input-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </div>
+            <input type="text" id="handleInput" placeholder="Codeforces Handle" class="form-input">
+          </div>
+          <button id="getRecsBtn" class="btn-primary">Go</button>
+        </div>
+
+        <!-- Filter Row -->
+        <div class="flex items-center justify-between" style="margin-top: 12px;">
+          <label for="yearFilter" class="section-label" style="margin-bottom:0;">Problems From</label>
+          <select id="yearFilter" class="form-select">
+            <option value="2020" selected>2020 or newer</option>
+            <option value="2021">2021 or newer</option>
+            <option value="2022">2022 or newer</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
+
+        <!-- User Info (Hidden by default) -->
+        <div id="userInfo" class="user-info-box hidden">
+          <div class="user-status">
+            <div class="status-dot"></div>
+            <span id="userInfoText">Loading...</span>
+          </div>
+          <button id="manualRecheckBtn" class="btn-icon" title="Refresh Data">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+          </button>
+        </div>
+
+      </div>
     </div>
 
-    <!-- History Section -->
-    <div id="historyCard" class="card history-card">
+    <!-- Recommendations Section -->
+    <div id="todaysRecs" class="hidden">
+      <h3 class="section-label">Today's Recommendations</h3>
+      <div id="todaysRecsList">
+        <!-- Problems injected by JS -->
+      </div>
+    </div>
+
+    <!-- History Accordion -->
+    <div id="historyCard" class="card">
       <div id="historyHeader" class="history-header">
-        <h2>History</h2>
-        <div class="history-controls">
-          <button id="clearHistoryBtn" class="clear-btn">Clear</button>
-          <span id="historyToggleIcon" class="toggle-icon">▶</span>
+        <h2 class="history-title">
+          <svg class="text-slate-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+          History
+        </h2>
+        
+        <div class="flex items-center gap-2">
+          <button id="clearHistoryBtn" class="btn-sm-danger">Clear</button>
+          <span id="historyToggleIcon" class="btn-icon" style="transition: transform 0.3s;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </span>
         </div>
       </div>
-      <div id="historyList" class="history-list"></div>
+      
+      <div id="historyList" class="history-list-container hidden">
+        <!-- History items injected by JS -->
+      </div>
     </div>
 
-    <!-- Status Area -->
-    <div id="status" class="status"></div>
-  </div>
+  </main>
 
+  <footer class="status-footer">
+    <div id="status"></div>
+  </footer>
+
+  <!-- Scripts -->
   <script src="state/AppState.js"></script>
   <script src="services/CodeforcesAPIService.js"></script>
   <script src="repository/CodeforcesRepository.js"></script>
