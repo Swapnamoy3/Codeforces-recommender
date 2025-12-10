@@ -148,50 +148,43 @@ class App {
   async handleExportData() {
     try {
       const data = await browser.storage.local.get(null);
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      
-      const downloading = browser.downloads.download({
-        url: url,
-        filename: `codeforces-recommender-backup-${timestamp}.json`,
-        saveAs: true
+      await browser.runtime.sendMessage({ 
+        command: 'downloadData', 
+        payload: { data } 
       });
-      
-      // Clean up URL object after potential download start (though download API is async, URL needs to survive)
-      // Actually browser.downloads takes the URL. 
     } catch (error) {
       console.error('Export failed:', error);
-      this.uiManager.showStatus('Export failed: ' + error.message, 'error');
+      this.uiManager.showStatus('Export init failed: ' + error.message, 'error');
     }
   }
 
   async handleImportData(file) {
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const json = JSON.parse(e.target.result);
-        
-        // Basic validation
-        if (typeof json !== 'object') throw new Error('Invalid JSON format');
-        
-        // Clear current storage and set new data
-        await browser.storage.local.clear();
-        await browser.storage.local.set(json);
-        
-        this.uiManager.showStatus('Import successful! Reloading...', '');
-        
-        // Reload state
-        await this.init();
-        
-      } catch (error) {
-        console.error('Import failed:', error);
-        this.uiManager.showStatus('Import failed: ' + error.message, 'error');
-      }
-    };
-    reader.readAsText(file);
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      
+      // Basic validation
+      if (typeof json !== 'object') throw new Error('Invalid JSON format');
+      
+      this.uiManager.showStatus('Importing...', 'loading');
+
+      // Delegate to background script
+      await browser.runtime.sendMessage({ 
+        command: 'importData', 
+        payload: { data: json } 
+      });
+      
+      this.uiManager.showStatus('Import successful! Reloading...', '');
+      
+      // Reload state
+      await this.init();
+      
+    } catch (error) {
+      console.error('Import failed:', error);
+      this.uiManager.showStatus('Import failed: ' + error.message, 'error');
+    }
   }
 
   handleStartTimer(problemId) {

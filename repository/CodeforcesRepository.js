@@ -7,6 +7,7 @@ class CodeforcesRepository {
   }
 
   async getUserData(handle, forceQuickCheck = false) {
+    handle = handle.toLowerCase();
     const cacheKey = `userData_${handle}`;
     const cachedData = (await browser.storage.local.get(cacheKey))[cacheKey] || {};
     
@@ -79,11 +80,13 @@ class CodeforcesRepository {
   }
 
   async getHistory(handle) {
+    handle = handle.toLowerCase();
     const historyKey = `history_${handle}`;
     return (await browser.storage.local.get(historyKey))[historyKey] || {};
   }
 
   async saveHistory(handle, recommendations, recommendationOrder) {
+    handle = handle.toLowerCase();
     const historyKey = `history_${handle}`;
     const history = await this.getHistory(handle);
     const today = new Date().toISOString().split('T')[0];
@@ -103,6 +106,7 @@ class CodeforcesRepository {
   }
 
   async updateSolvedStatus(handle, userData) {
+    handle = handle.toLowerCase();
     const history = await this.getHistory(handle);
     
     let updated = false;
@@ -121,12 +125,14 @@ class CodeforcesRepository {
   }
 
   async clearHistory(handle) {
+    handle = handle.toLowerCase();
     const historyKey = `history_${handle}`;
     const cacheKey = `userData_${handle}`;
     await browser.storage.local.remove([historyKey, cacheKey]);
   }
 
   async markProblemAsSolved(handle, problemId, solveTime) {
+    handle = handle.toLowerCase();
     const historyKey = `history_${handle}`;
     const history = await this.getHistory(handle);
     const problem = history[problemId];

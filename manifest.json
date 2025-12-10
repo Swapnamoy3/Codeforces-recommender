@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Codeforces Problem Recommender Pro",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Get personalized Codeforces problem recommendations...",
   "background": {
     "scripts": ["background.js"],
@@ -11,7 +11,8 @@
     "storage",
     "alarms",
     "https://codeforces.com/api/*",
-    "downloads"
+    "downloads",
+    "notifications"
   ],
   "browser_action": {
     "default_popup": "popup.html",

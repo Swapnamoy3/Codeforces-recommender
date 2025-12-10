@@ -50,8 +50,11 @@ class UIManager {
         this.yearTo.addEventListener('input', () => controller.handleYearFilterChange(this.getYearFilter()));
 
         if (this.exportBtn) this.exportBtn.addEventListener('click', controller.handleExportData.bind(controller));
-        if (this.importBtn) this.importBtn.addEventListener('click', () => this.importFile.click());
-        if (this.importFile) this.importFile.addEventListener('change', (e) => controller.handleImportData(e.target.files[0]));
+        if (this.importBtn) {
+            this.importBtn.addEventListener('click', () => {
+                browser.tabs.create({ url: 'import.html' });
+            });
+        }
     }
 
     render() {

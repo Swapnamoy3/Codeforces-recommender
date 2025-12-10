@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Restore Backup - Codeforces Recommender</title>
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    body {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .import-container {
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      text-align: center;
+      width: 100%;
+    }
+    .file-input-wrapper {
+      margin: 24px 0;
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .file-input {
+      font-size: 16px;
+      padding: 10px;
+      border: 2px dashed var(--slate-300);
+      border-radius: 8px;
+      width: 100%;
+      cursor: pointer;
+      background: var(--slate-50);
+    }
+    .file-input:hover {
+      border-color: var(--primary-500);
+      background: var(--primary-50);
+    }
+    .status-message {
+      margin-top: 16px;
+      min-height: 24px;
+      font-weight: 500;
+    }
+    .status-success { color: var(--green-600); }
+    .status-error { color: var(--red-600); }
+  </style>
+</head>
+<body>
+  <div class="import-container">
+    <div class="brand-title" style="margin-bottom: 8px;">Codeforces Recommender</div>
+    <h2 style="color: var(--slate-600); font-weight: 500;">Restore Backup</h2>
+    
+    <p style="color: var(--slate-500); margin-top: 12px; line-height: 1.5;">
+      Select your backup JSON file to restore your history and settings.<br>
+      This will overwrite your current extension data.
+    </p>
+
+    <div class="file-input-wrapper">
+      <input type="file" id="backupFile" accept=".json" class="file-input">
+    </div>
+
+    <div id="status" class="status-message"></div>
+  </div>
+  <script src="import.js"></script>
+</body>
+</html>
