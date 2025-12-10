@@ -10,9 +10,11 @@ class RatingBasedStrategy {
       
       if (p.contestId) {
         const contestYear = contestData[p.contestId];
-        // Apply year range filter
-        if (yearRange.from && contestYear < yearRange.from) return false;
-        if (yearRange.to && contestYear > yearRange.to) return false;
+        // Apply year range filter only if contest year is known
+        if (contestYear) {
+          if (yearRange.from && contestYear < yearRange.from) return false;
+          if (yearRange.to && contestYear > yearRange.to) return false;
+        }
       }
       
       return true;

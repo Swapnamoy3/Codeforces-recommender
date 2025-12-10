@@ -47,17 +47,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       browser.storage.local.set({ activeTimers, solvedProblems });
       updateAlarms();
       
-      // Also update the main history object
-      const historyKey = `history_${payload.handle}`;
-      browser.storage.local.get(historyKey).then(data => {
-        const history = data[historyKey] || {};
-        if (history[payload.problemId]) {
-          history[payload.problemId].status = 'solved';
-          history[payload.problemId].solveTime = solveTime;
-          history[payload.problemId].solvedOn = Date.now();
-          browser.storage.local.set({ [historyKey]: history });
-        }
-      });
+      // History update is now handled solely by the UI/App to prevent race conditions.
     }
   } else if (command === 'requestSync') {
     sendResponse({ activeTimers, solvedProblems });
