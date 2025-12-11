@@ -115,10 +115,8 @@ class App {
     this.uiManager.startRefreshAnimation();
     try {
       const userData = await this.repository.getUserData(handle, true);
-      const updated = await this.repository.updateSolvedStatus(handle, userData);
-      if (updated) {
-        await this.stopTimersForSolvedProblems(handle, userData);
-      }
+      await this.stopTimersForSolvedProblems(handle, userData);
+      await this.repository.updateSolvedStatus(handle, userData);
       await this.loadHistory(handle);
       this.uiManager.showStatus('Re-check complete!', '');
     } catch (error) {
@@ -135,6 +133,7 @@ class App {
     }
     try {
       const userData = await this.repository.getUserData(handle);
+      await this.stopTimersForSolvedProblems(handle, userData);
       await this.repository.updateSolvedStatus(handle, userData);
       const history = await this.repository.getHistory(handle);
       this.appState.setState({ history, userData });
@@ -208,9 +207,5 @@ class App {
       }
     }
 
-    if (historyUpdated) {
-      // If history was updated, we must reload all data from storage into the app's state to refresh the UI.
-      await this.loadHistory(handle);
-    }
   }
 }
